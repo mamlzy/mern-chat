@@ -27,9 +27,17 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ChatLoading } from '../chat-loading';
 import { UserListItem } from '../user-avatar/user-list-item';
+import { getSender } from '../../config/chat-logics';
 
 export function SideDrawer() {
-  const { user, setSelectedChat, chats, setChats } = useChatState();
+  const {
+    user,
+    setSelectedChat,
+    chats,
+    setChats,
+    notifications,
+    setNotifications,
+  } = useChatState();
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -145,9 +153,33 @@ export function SideDrawer() {
         <div className='flex items-center'>
           <Menu>
             <MenuButton p={1}>
-              <FaBell className='text-2xl mr-1' />
+              <div className='max-w-max relative'>
+                <FaBell className='text-2xl mr-1' />
+                {notifications.length > 0 && (
+                  <div className='size-6 rounded-full grid place-items-center absolute -right-2 -top-2 bg-red-500 text-white text-sm'>
+                    {notifications.length}
+                  </div>
+                )}
+              </div>
             </MenuButton>
-            {/* <MenuList></MenuList> */}
+            <MenuList pl={2}>
+              {notifications.length < 1 && 'No new message'}
+              {notifications.map((notif) => (
+                <MenuItem
+                  key={notif._id}
+                  onClick={() => {
+                    setSelectedChat(notif.chat);
+                    setNotifications((prev) =>
+                      prev.filter((n) => n._id !== notif._id),
+                    );
+                  }}
+                >
+                  {notif.chat.isGroupChat
+                    ? `New Message in ${notif.chat.chatName}`
+                    : `New Message from ${getSender(user, notif.chat.users)}`}
+                </MenuItem>
+              ))}
+            </MenuList>
           </Menu>
           <Menu>
             <MenuButton as={Button} rightIcon={<FaChevronDown />}>
