@@ -12,8 +12,6 @@ import { cn } from '../lib/utils';
 export function ScrollableChat({ messages }) {
   const { user } = useChatState();
 
-  console.log('messages =>', messages);
-
   return (
     <ScrollableFeed>
       {messages.map((message, idx) => (

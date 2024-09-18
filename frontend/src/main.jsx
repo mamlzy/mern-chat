@@ -15,7 +15,6 @@ const router = createBrowserRouter([
       {
         path: '/',
         element: <HomePage />,
-        // children: [{ path: '/chats', element: <ChatPage /> }],
       },
       { path: '/chats', element: <ChatPage /> },
     ],
@@ -23,11 +22,9 @@ const router = createBrowserRouter([
 ]);
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <ChakraProvider>
-      <div className='app min-h-svh flex bg-cover bg-center'>
-        <RouterProvider router={router} />
-      </div>
-    </ChakraProvider>
-  </StrictMode>,
+  <ChakraProvider>
+    <div className='app min-h-svh flex bg-cover bg-center'>
+      <RouterProvider router={router} />
+    </div>
+  </ChakraProvider>,
 );

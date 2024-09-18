@@ -13,8 +13,14 @@ import { getSender, getSenderFull } from '../config/chat-logics';
 import { ProfileModal } from './misc/profile-modal';
 import { UpdateGroupChatModal } from './misc/update-group-chat-modal';
 import { useEffect, useState } from 'react';
+import io from 'socket.io-client';
+import Lottie from 'react-lottie';
+import typingsAnimation from '../animations/typings.json';
 import axios from 'axios';
 import { ScrollableChat } from './scrollable-chat';
+
+const ENDPOINT = 'http://localhost:8000';
+let socket, selectedChatCompare;
 
 export function SingleChat({ fetchAgain, setFetchAgain }) {
   const { user, selectedChat, setSelectedChat } = useChatState();
@@ -23,6 +29,18 @@ export function SingleChat({ fetchAgain, setFetchAgain }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+
+  const defaultOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: typingsAnimation,
+    rendererSettings: {
+      preserveAspectRatio: 'xMidYMid slice',
+    },
+  };
 
   const fetchMessages = async () => {
     if (!selectedChat) return;
@@ -41,6 +59,8 @@ export function SingleChat({ fetchAgain, setFetchAgain }) {
 
       setMessages(data);
       setLoading(false);
+
+      socket.emit('join chat', selectedChat._id);
     } catch (err) {
       console.log('err => ', err);
       toast({
@@ -56,11 +76,38 @@ export function SingleChat({ fetchAgain, setFetchAgain }) {
   };
 
   useEffect(() => {
+    socket = io(ENDPOINT);
+    socket.emit('setup', user);
+    socket.on('connected', () => {
+      setSocketConnected(true);
+    });
+    socket.on('typing', () => setIsTyping(true));
+    socket.on('stop typing', () => setIsTyping(false));
+  }, []);
+
+  useEffect(() => {
     fetchMessages();
+
+    selectedChatCompare = selectedChat;
   }, [selectedChat]);
+
+  useEffect(() => {
+    socket.on('message received', (newMessageReceived) => {
+      console.log({ selectedChatCompare, newMessageReceived });
+      if (
+        !selectedChatCompare ||
+        selectedChatCompare._id !== newMessageReceived.chat._id
+      ) {
+        // give notification
+      } else {
+        setMessages((prev) => [...prev, newMessageReceived]);
+      }
+    });
+  }, []);
 
   const sendMessage = async (e) => {
     if (e.key === 'Enter' && newMessage) {
+      socket.emit('stop typing', selectedChat._id);
       try {
         setNewMessage('');
         const { data } = await axios.post(
@@ -78,6 +125,7 @@ export function SingleChat({ fetchAgain, setFetchAgain }) {
 
         console.log('data =>', data);
 
+        socket.emit('new message', data);
         setMessages([...messages, data]);
       } catch (err) {
         console.log('err => ', err);
@@ -97,6 +145,24 @@ export function SingleChat({ fetchAgain, setFetchAgain }) {
     setNewMessage(e.target.value);
 
     // typing indicator logic
+    if (!socketConnected) return;
+
+    if (!typing) {
+      setTyping(true);
+      socket.emit('typing', selectedChat._id);
+    }
+
+    const lastTypingTime = new Date().getTime();
+    const timerLength = 3000;
+    setTimeout(() => {
+      const timeNow = new Date().getTime();
+      const timeDiff = timeNow - lastTypingTime;
+
+      if (timeDiff >= timerLength && typing) {
+        socket.emit('stop typing', selectedChat._id);
+        setTyping(false);
+      }
+    }, timerLength);
   };
 
   return (
@@ -164,6 +230,15 @@ export function SingleChat({ fetchAgain, setFetchAgain }) {
             )}
 
             <FormControl onKeyDown={sendMessage} isRequired mt={3}>
+              {isTyping ? (
+                <div>
+                  <Lottie
+                    options={defaultOptions}
+                    width={70}
+                    style={{ marginBottom: 15, marginLeft: 0 }}
+                  />
+                </div>
+              ) : null}
               <Input
                 variant='filled'
                 bg='#e0e0e0'
