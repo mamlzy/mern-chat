@@ -7,8 +7,6 @@ import { Box } from '@chakra-ui/react';
 export function ChatPage() {
   const { user } = useChatState();
 
-  console.log('user =>', user);
-
   return (
     <div className='w-full'>
       {user && <SideDrawer />}
