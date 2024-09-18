@@ -5,8 +5,9 @@ import axios from 'axios';
 import { FaPlus } from 'react-icons/fa';
 import { ChatLoading } from './chat-loading';
 import { getSender } from '../config/chat-logics';
+import { GroupChatModal } from './misc/group-chat-modal';
 
-export function MyChats() {
+export function MyChats({ fetchAgain }) {
   const toast = useToast();
   const { user, selectedChat, setSelectedChat, chats, setChats } =
     useChatState();
@@ -35,7 +36,7 @@ export function MyChats() {
   useEffect(() => {
     setLoggedUser(JSON.parse(localStorage.getItem('userInfo')));
     fetchChats();
-  }, []);
+  }, [fetchAgain]);
 
   return (
     <Box
@@ -59,13 +60,15 @@ export function MyChats() {
         alignItems='center'
       >
         My Chats
-        <Button
-          display='flex'
-          fontSize={{ base: '17px', md: '10px', lg: '17px' }}
-          rightIcon={<FaPlus />}
-        >
-          New Group Chat
-        </Button>
+        <GroupChatModal>
+          <Button
+            display='flex'
+            fontSize={{ base: '17px', md: '10px', lg: '17px' }}
+            rightIcon={<FaPlus />}
+          >
+            New Group Chat
+          </Button>
+        </GroupChatModal>
       </Box>
 
       <Box
@@ -80,7 +83,7 @@ export function MyChats() {
       >
         {chats ? (
           <Stack overflowY='scroll'>
-            {chats.map((chat) => (
+            {chats?.map((chat) => (
               <Box
                 key={chat._id}
                 onClick={() => setSelectedChat(chat)}

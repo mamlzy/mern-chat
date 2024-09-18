@@ -99,7 +99,7 @@ export function SideDrawer() {
       );
 
       if (!chats.find((chat) => chat._id === data._id))
-        setChats([...chats, data]);
+        setChats([data, ...chats]);
 
       setSelectedChat(data);
       setLoadingChat(false);
